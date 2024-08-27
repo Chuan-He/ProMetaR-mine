@@ -1,4 +1,6 @@
 import argparse
+import os 
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import torch
 
 from dassl.utils import setup_logger, set_random_seed, collect_env_info
@@ -87,27 +89,25 @@ def extend_cfg(cfg):
 
     # Config for PromptSRC
     cfg.TRAINER.PROMETAR = CN()
-    cfg.TRAINER.PROMETAR.N_CTX_VISION = 4  # number of context vectors at the vision branch
-    cfg.TRAINER.PROMETAR.N_CTX_TEXT = 4  # number of context vectors at the language branch
+    cfg.TRAINER.PROMETAR.N_CTX_VISION = 2  # number of context vectors at the vision branch
+    cfg.TRAINER.PROMETAR.N_CTX_TEXT = 2  # number of context vectors at the language branch
     cfg.TRAINER.PROMETAR.CTX_INIT = "a photo of a"  # initialization words
     cfg.TRAINER.PROMETAR.PREC = "fp16"  # fp16, fp32, amp
-    cfg.TRAINER.PROMETAR.PROMPT_DEPTH_VISION = 9  # Max 12, minimum 0, for 0 it will be using shallow IVLP prompting (J=1)
-    cfg.TRAINER.PROMETAR.PROMPT_DEPTH_TEXT = 9  # Max 12, minimum 0, for 0 it will be using shallow IVLP prompting (J=1)
+    cfg.TRAINER.PROMETAR.PROMPT_DEPTH_VISION = 12  # Max 12, minimum 0, for 0 it will be using shallow IVLP prompting (J=1)
+    cfg.TRAINER.PROMETAR.PROMPT_DEPTH_TEXT = 12  # Max 12, minimum 0, for 0 it will be using shallow IVLP prompting (J=1)
     cfg.DATASET.SUBSAMPLE_CLASSES = "all"  # all, base or new
 
     
-    cfg.TRAINER.PROMETAR.ADAPT_LR = 0.0005
-    cfg.TRAINER.PROMETAR.LR_RATIO = 0.0005
+    cfg.TRAINER.PROMETAR.ADAPT_LR = 0.002
+    cfg.TRAINER.PROMETAR.LR_RATIO = 1.0
     
     cfg.TRAINER.PROMETAR.FAST_ADAPTATION = False
-    cfg.TRAINER.PROMETAR.MIXUP_ALPHA = 0.5
-    cfg.TRAINER.PROMETAR.MIXUP_BETA = 0.5
     
-    cfg.TRAINER.PROMETAR.DIM_RATE=8
+    cfg.TRAINER.PROMETAR.DIM_RATE=1
     
     cfg.OPTIM_VNET = CN()
     cfg.OPTIM_VNET.NAME = "adam"
-    cfg.OPTIM_VNET.LR = 0.0003
+    cfg.OPTIM_VNET.LR = 0.002
     cfg.OPTIM_VNET.WEIGHT_DECAY = 5e-4
     cfg.OPTIM_VNET.MOMENTUM = 0.9
     cfg.OPTIM_VNET.SGD_DAMPNING = 0
@@ -149,8 +149,8 @@ def extend_cfg(cfg):
     cfg.TRAINER.IVLP.CTX_INIT = "a photo of a"  # initialization words (only for language prompts)
     cfg.TRAINER.IVLP.PREC = "fp16"  # fp16, fp32, amp
     # If both variables below are set to 0, 0, will the config will degenerate to COOP model
-    cfg.TRAINER.IVLP.PROMPT_DEPTH_VISION = 9  # Max 12, minimum 0, for 0 it will act as shallow IVLP prompting (J=1)
-    cfg.TRAINER.IVLP.PROMPT_DEPTH_TEXT = 9  # Max 12, minimum 0, for 0 it will act as shallow IVLP prompting(J=1)
+    cfg.TRAINER.IVLP.PROMPT_DEPTH_VISION = 12  # Max 12, minimum 0, for 0 it will act as shallow IVLP prompting (J=1)
+    cfg.TRAINER.IVLP.PROMPT_DEPTH_TEXT = 12  # Max 12, minimum 0, for 0 it will act as shallow IVLP prompting(J=1)
     cfg.DATASET.SUBSAMPLE_CLASSES = "all"  # all, base or new
 
 

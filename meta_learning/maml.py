@@ -168,11 +168,86 @@ class MAML(BaseLearner):
 
                     if grad_func:
                         if gradient2 == None:
-                            gradient = grad_func(gradient1.type(grad_func.dtype), gradient2, gradient3.type(grad_func.dtype), name)
+                            gradient = grad_func(gradient1, gradient2, gradient3, name)
                         elif gradient3 == None:
-                            gradient = grad_func(gradient1.type(grad_func.dtype), gradient2.type(grad_func.dtype), gradient3, name)
+                            gradient = grad_func(gradient1, gradient2, gradient3, name)
                         else:
                             raise NotImplemented
+                    grad_counter += 1
+                else:
+                    gradient = None
+                gradients.append(gradient)
+        else:
+            try:
+                gradients = grad(loss,
+                                 self.module.parameters(),
+                                 retain_graph=second_order,
+                                 create_graph=second_order,
+                                 allow_unused=allow_unused)
+            except RuntimeError:
+                traceback.print_exc()
+                print('learn2learn: Maybe try with allow_nograd=True and/or allow_unused=True ?')
+
+        # Update the module
+        self.module = maml_update(self.module, self.lr, gradients)
+    
+    def adapt_2(self,
+              loss1,
+              loss2,
+              first_order=None,
+              allow_unused=None,
+              allow_nograd=None,
+              grad_func=None):
+        """
+        **Description**
+
+        Takes a gradient step on the loss and updates the cloned parameters in place.
+
+        **Arguments**
+
+        * **loss** (Tensor) - Loss to minimize upon update.
+        * **first_order** (bool, *optional*, default=None) - Whether to use first- or
+            second-order updates. Defaults to self.first_order.
+        * **allow_unused** (bool, *optional*, default=None) - Whether to allow differentiation
+            of unused parameters. Defaults to self.allow_unused.
+        * **allow_nograd** (bool, *optional*, default=None) - Whether to allow adaptation with
+            parameters that have `requires_grad = False`. Defaults to self.allow_nograd.
+
+        """
+        if first_order is None:
+            first_order = self.first_order
+        if allow_unused is None:
+            allow_unused = self.allow_unused
+        if allow_nograd is None:
+            allow_nograd = self.allow_nograd
+        second_order = not first_order
+
+        if allow_nograd:
+            # Compute relevant gradients
+            diff_params = [p for p in self.module.parameters() if p.requires_grad]
+
+            grad_params1 = grad(loss1,
+                               diff_params,
+                               retain_graph=True,
+                               create_graph=second_order,
+                               allow_unused=allow_unused)
+            grad_params2 = grad(loss2,
+                               diff_params,
+                               retain_graph=True,
+                               create_graph=second_order,
+                               allow_unused=allow_unused)
+
+            gradients = []
+            grad_counter = 0
+            # Handles gradients for non-differentiable parameters
+            for name, param in self.module.named_parameters():
+                if param.requires_grad:
+                    gradient1 = grad_params1[grad_counter]
+                    gradient2 = grad_params2[grad_counter]
+
+                    if grad_func:
+                        gradient = grad_func.forward_2(gradient1, gradient2, name)
+    
                     grad_counter += 1
                 else:
                     gradient = None
